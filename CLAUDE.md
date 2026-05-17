@@ -135,6 +135,27 @@ Copy `.env.example` to `.env`. Required keys:
 
 ---
 
+## Package Version Notes
+
+`requirements.txt` has been updated to versions current as of May 2026. Two breaking changes from the spec code in `STORYTRACE_FULL_CONTEXT.md`:
+
+1. **`google-generativeai` is deprecated — use `google-genai`.**
+   The spec code uses `import google.generativeai as genai`. Replace with the new SDK:
+   ```python
+   from google import genai
+   client = genai.Client()
+   ```
+   API surface changed; check the [google-genai migration guide](https://ai.google.dev/gemini-api/docs/migrate) when implementing PR-10 (Translator) and PR-20 (Forecast Agent).
+
+2. **`openai` jumped from 1.x → 2.x.**
+   The Featherless DNA Extractor usage (`openai.OpenAI(base_url=..., api_key=...)`) still works in 2.x — the custom base URL pattern is unchanged. No code change required for PR-09.
+
+3. **`langgraph` 1.x and `langchain` 1.x have updated APIs** vs the 0.x code in the spec. The `StateGraph` / `add_node` / `add_edge` pattern in the spec is still valid in 1.x. Verify imports when implementing PR-04 (orchestrator).
+
+4. **spaCy + Python 3.14**: spaCy 3.8.14 has an import-time issue with `en_core_web_sm` on Python 3.14. If you hit it, use Python 3.13.
+
+---
+
 ## Token Efficiency Rules
 
 - spaCy NER runs locally — filters articles before any LLM call (zero tokens)
