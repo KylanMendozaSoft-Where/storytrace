@@ -6,7 +6,7 @@
 
 ## Prerequisites
 
-- Python 3.11 or 3.13 (3.14 has a known spaCy import issue — use 3.13 if you hit it)
+- Python 3.14.3+
 - Node.js 18+
 - PostgreSQL 15+
 - Redis 7+
@@ -39,6 +39,12 @@ Open `.env` and set the following:
 ## Backend Setup
 
 ```bash
+# Create venv
+python -m venv venv
+
+# Activate the virtual environment first
+source venv/bin/activate
+
 # Install Python dependencies
 pip install -r requirements.txt
 
@@ -70,6 +76,26 @@ curl http://localhost:8000/health
 ```
 
 Swagger UI is available at [http://localhost:8000/docs](http://localhost:8000/docs).
+
+---
+
+## Running Tests
+
+```bash
+# Activate the virtual environment first
+source venv/bin/activate
+
+# Run the full test suite
+python -m pytest tests/ -v
+
+# Run a single test file
+python -m pytest tests/test_seed_agent.py -v
+
+# Run a single test by name
+python -m pytest tests/test_seed_agent.py::test_run_with_topic_uses_gdelt -v
+```
+
+Tests do not require any running services (database, Redis, or API keys) — all external calls are mocked.
 
 ---
 
@@ -130,7 +156,7 @@ curl http://localhost:8000/story/<job_id>
 
 | Layer | Technology |
 |---|---|
-| Backend | Python 3.11 + FastAPI + Uvicorn |
+| Backend | Python 3.14.3 + FastAPI + Uvicorn |
 | Agent pipeline | LangGraph StateGraph (7 agents) |
 | NLP | spaCy (local NER), langdetect |
 | DNA extraction | Featherless API (Mistral-7B) |

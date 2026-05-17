@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
-### Backend (Python 3.11)
+### Backend (Python 3.14.3)
 ```bash
 # Install dependencies
 pip install -r requirements.txt
@@ -152,7 +152,7 @@ Copy `.env.example` to `.env`. Required keys:
 
 3. **`langgraph` 1.x and `langchain` 1.x have updated APIs** vs the 0.x code in the spec. The `StateGraph` / `add_node` / `add_edge` pattern in the spec is still valid in 1.x. Verify imports when implementing PR-04 (orchestrator).
 
-4. **spaCy + Python 3.14**: spaCy 3.8.14 has an import-time issue with `en_core_web_sm` on Python 3.14. If you hit it, use Python 3.13.
+4. **spaCy + Python 3.14.3**: spaCy 3.8.13 works correctly on Python 3.14.3 — `en_core_web_sm` loads without issue. If the model is missing, run `python -m spacy download en_core_web_sm`.
 
 ---
 
