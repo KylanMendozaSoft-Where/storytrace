@@ -102,7 +102,7 @@ def build_story_response(story_row, version_rows) -> dict:
             'dna':      story_row[7] or {},
         },
         'scored_list': scored_list,
-        'tree': story_row[10],  # JSONB returned as dict by psycopg2; None until pipeline completes
+        'tree': None,  # JSONB returned as dict by psycopg2; None until pipeline completes
     }
 
 

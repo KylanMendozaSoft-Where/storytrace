@@ -57,14 +57,23 @@ async def get_recent_stories():
 
 @app.get("/story/{job_id}", response_model=StoryResponse)
 async def get_story_result(job_id: str):
-    cached = r.get(f"story:{job_id}")
-    if cached:
-        return json_lib.loads(cached)
+    try:
+        cached = r.get(f"story:{job_id}")
+        if cached:
+            return json_lib.loads(cached)
+    except Exception:
+        pass  # Redis unavailable — fall through to DB
+
     story = get_story(job_id)
     if not story:
         return {"error": "Story not found"}
+
     if story['status'] == 'complete':
-        r.setex(f"story:{job_id}", 3600, json_lib.dumps(story))
+        try:
+            r.setex(f"story:{job_id}", 3600, json_lib.dumps(story))
+        except Exception:
+            pass  # Redis unavailable — still return the result from DB
+
     return story
 
 
