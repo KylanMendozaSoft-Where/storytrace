@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.models import AnalyzeRequest, AnalyzeResponse, StoryResponse
 from backend.db.connection import save_story, update_story, get_story, get_recent
+from backend.orchestrator import run_pipeline
 
 app = FastAPI(title="StoryTrace API")
 
@@ -41,7 +42,6 @@ async def analyze(req: AnalyzeRequest, background_tasks: BackgroundTasks):
 
 
 async def run_and_save(job_id: str, user_input: str):
-    from backend.orchestrator import run_pipeline
     loop = asyncio.get_event_loop()
     try:
         result = await loop.run_in_executor(None, run_pipeline, job_id, user_input)
