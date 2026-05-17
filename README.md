@@ -6,7 +6,7 @@
 
 ## Prerequisites
 
-- Python 3.11 or 3.13 (3.14 has a known spaCy import issue — use 3.13 if you hit it)
+- Python 3.14.3+
 - Node.js 18+
 - PostgreSQL 15+
 - Redis 7+
@@ -130,7 +130,7 @@ curl http://localhost:8000/story/<job_id>
 
 | Layer | Technology |
 |---|---|
-| Backend | Python 3.11 + FastAPI + Uvicorn |
+| Backend | Python 3.14.3 + FastAPI + Uvicorn |
 | Agent pipeline | LangGraph StateGraph (7 agents) |
 | NLP | spaCy (local NER), langdetect |
 | DNA extraction | Featherless API (Mistral-7B) |
