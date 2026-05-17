@@ -28,9 +28,9 @@ r = redis.from_url(os.environ.get('REDIS_URL', 'redis://localhost:6379'))
 @app.post("/analyze", status_code=202, response_model=AnalyzeResponse)
 async def analyze(req: AnalyzeRequest, background_tasks: BackgroundTasks):
     job_id = str(uuid.uuid4())
-    user_input = req.url or req.topic
+    user_input = req.url or req.topic  # single string passed to the pipeline
 
-    save_story(job_id, user_input)
+    save_story(job_id, req.topic, req.url)  # store url and topic in their own columns
     background_tasks.add_task(run_and_save, job_id, user_input)
 
     return {
@@ -70,7 +70,11 @@ async def get_story_result(job_id: str):
 
 @app.post("/forecast/{job_id}")
 async def forecast(job_id: str):
-    from agents.forecast_agent import run as run_forecast
+    try:
+        from agents.forecast_agent import run as run_forecast
+    except ImportError:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=501, content={"error": "Forecast agent not yet implemented"})
     story = get_story(job_id)
     if not story or story['status'] != 'complete':
         return {"error": "Story not complete yet"}

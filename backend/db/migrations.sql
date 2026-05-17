@@ -13,7 +13,8 @@ CREATE TABLE stories (
   root_text     TEXT,           -- first 300 words of the root article sent to the LLM
   root_dna      JSONB,          -- structured DNA of the root story: facts, tone, framing
   status        TEXT DEFAULT 'processing', -- 'processing' | 'complete' | 'failed'
-  created_at    TIMESTAMP DEFAULT NOW()    -- when the job was first submitted
+  created_at    TIMESTAMP DEFAULT NOW(),   -- when the job was first submitted
+  tree          JSONB           -- full D3-ready nested tree JSON produced by geo_builder; NULL until pipeline completes
 );
 
 -- One row per outlet version found by the crawler for a given story.
