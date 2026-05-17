@@ -73,6 +73,26 @@ Swagger UI is available at [http://localhost:8000/docs](http://localhost:8000/do
 
 ---
 
+## Running Tests
+
+```bash
+# Activate the virtual environment first
+source venv/bin/activate
+
+# Run the full test suite
+python -m pytest tests/ -v
+
+# Run a single test file
+python -m pytest tests/test_seed_agent.py -v
+
+# Run a single test by name
+python -m pytest tests/test_seed_agent.py::test_run_with_topic_uses_gdelt -v
+```
+
+Tests do not require any running services (database, Redis, or API keys) — all external calls are mocked.
+
+---
+
 ## Frontend Setup
 
 ```bash
