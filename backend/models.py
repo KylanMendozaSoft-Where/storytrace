@@ -1,10 +1,16 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from typing import Optional, List
 
 
 class AnalyzeRequest(BaseModel):
     url:   Optional[str] = None
     topic: Optional[str] = None
+
+    @model_validator(mode='after')
+    def require_url_or_topic(self):
+        if not self.url and not self.topic:
+            raise ValueError('at least one of url or topic must be provided')
+        return self
 
 
 class AnalyzeResponse(BaseModel):

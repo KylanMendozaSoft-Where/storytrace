@@ -7,12 +7,12 @@ def get_conn():
     return psycopg2.connect(os.environ['DATABASE_URL'])
 
 
-def save_story(job_id: str, user_input: str):
+def save_story(job_id: str, topic: str | None, url: str | None):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO stories (id, topic, status) VALUES (%s, %s, 'processing')",
-                (job_id, user_input)
+                "INSERT INTO stories (id, topic, input_url, status) VALUES (%s, %s, %s, 'processing')",
+                (job_id, topic, url)
             )
 
 
@@ -23,7 +23,7 @@ def update_story(job_id: str, result: dict, status: str):
             cur.execute(
                 """UPDATE stories
                    SET status=%s, root_outlet=%s, root_url=%s,
-                       root_headline=%s, root_text=%s, root_dna=%s
+                       root_headline=%s, root_text=%s, root_dna=%s, tree=%s
                    WHERE id=%s""",
                 (
                     status,
@@ -32,6 +32,7 @@ def update_story(job_id: str, result: dict, status: str):
                     root.get('headline'),
                     root.get('text'),
                     json.dumps(root.get('dna', {})),
+                    json.dumps(result.get('tree')) if result.get('tree') is not None else None,
                     job_id,
                 )
             )
@@ -72,8 +73,9 @@ def get_story(job_id: str) -> dict | None:
 
 
 def build_story_response(story_row, version_rows) -> dict:
-    # story_row columns: id, topic, input_url, root_outlet, root_url,
-    #                    root_headline, root_text, root_dna, status, created_at
+    # story_row columns: id(0), topic(1), input_url(2), root_outlet(3), root_url(4),
+    #                    root_headline(5), root_text(6), root_dna(7), status(8),
+    #                    created_at(9), tree(10)
     scored_list = [
         {
             'outlet':        row[2],
@@ -100,7 +102,7 @@ def build_story_response(story_row, version_rows) -> dict:
             'dna':      story_row[7] or {},
         },
         'scored_list': scored_list,
-        'tree': None,
+        'tree': story_row[10],  # JSONB returned as dict by psycopg2; None until pipeline completes
     }
 
 
