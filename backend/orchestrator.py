@@ -10,6 +10,12 @@ from agents import (
 # different key — it must write back into the same list so dna_extractor sees the updates.
 
 
+def _route_after_seed(state: dict) -> str:
+    # seed_agent sets state['error'] on failure (GDELT timeout, no articles found, etc.).
+    # Short-circuit to END so downstream agents never run on invalid state.
+    return 'end' if state.get('error') else 'crawler'
+
+
 def build_pipeline():
     g = StateGraph(dict)
 
@@ -22,7 +28,7 @@ def build_pipeline():
     g.add_node('alert',      alert_agent.run)
 
     g.set_entry_point('seed')
-    g.add_edge('seed',       'crawler')
+    g.add_conditional_edges('seed', _route_after_seed, {'crawler': 'crawler', 'end': END})
     g.add_edge('crawler',    'translator')  # translate before DNA extraction
     g.add_edge('translator', 'dna')
     g.add_edge('dna',        'scorer')
