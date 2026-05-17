@@ -1,7 +1,5 @@
-import ipaddress
 import os
 import re
-import socket
 import requests
 import spacy
 from urllib.parse import urlparse
@@ -13,38 +11,9 @@ NEWSAPI_URL = 'https://newsapi.org/v2/everything'
 
 _ENTITY_LABELS = {'PERSON', 'ORG', 'GPE', 'EVENT', 'NORP'}
 
-# RFC-1918 + loopback + link-local + other reserved ranges that must never be fetched
-_BLOCKED_NETWORKS = [
-    ipaddress.ip_network('10.0.0.0/8'),
-    ipaddress.ip_network('172.16.0.0/12'),
-    ipaddress.ip_network('192.168.0.0/16'),
-    ipaddress.ip_network('127.0.0.0/8'),
-    ipaddress.ip_network('169.254.0.0/16'),   # link-local
-    ipaddress.ip_network('0.0.0.0/8'),
-    ipaddress.ip_network('100.64.0.0/10'),    # shared address space (RFC 6598)
-    ipaddress.ip_network('::1/128'),
-    ipaddress.ip_network('fc00::/7'),
-    ipaddress.ip_network('fe80::/10'),
-]
-
 
 def _is_url(text: str) -> bool:
     return text.startswith('http://') or text.startswith('https://')
-
-
-def _is_safe_url(url: str) -> bool:
-    """Return False if the URL's hostname resolves to a private/internal IP (SSRF guard)."""
-    try:
-        hostname = urlparse(url).hostname
-        if not hostname:
-            return False
-        for _, _, _, _, sockaddr in socket.getaddrinfo(hostname, None):
-            ip = ipaddress.ip_address(sockaddr[0])
-            if any(ip in net for net in _BLOCKED_NETWORKS):
-                return False
-        return True
-    except Exception:
-        return False
 
 
 def _outlet_from_url(url: str) -> str:
@@ -54,9 +23,7 @@ def _outlet_from_url(url: str) -> str:
 
 
 def _fetch_text(url: str) -> str:
-    """Fetch raw page text (first 300 words). Blocks private IPs; returns '' on any error."""
-    if not _is_safe_url(url):
-        return ''
+    """Fetch raw page text (first 300 words). Returns '' on any error."""
     try:
         r = requests.get(url, timeout=8, headers={'User-Agent': 'StoryTrace/1.0'})
         r.raise_for_status()
@@ -83,7 +50,7 @@ def query_gdelt(query: str) -> dict | None:
 
 
 def query_newsapi(query: str) -> dict | None:
-    """Fallback if GDELT returns nothing. Fetches multiple results and picks the earliest."""
+    """Fallback if GDELT returns nothing. Requires NEWSAPI_KEY env var."""
     api_key = os.environ.get('NEWSAPI_KEY')
     if not api_key:
         return None
@@ -91,14 +58,11 @@ def query_newsapi(query: str) -> dict | None:
         r = requests.get(NEWSAPI_URL, params={
             'q':        query,
             'sortBy':   'publishedAt',
-            'pageSize': 10,   # fetch batch; pick oldest as the likely root/source article
+            'pageSize': 1,
             'apiKey':   api_key,
         }, timeout=10)
         articles = r.json().get('articles', [])
-        if not articles:
-            return None
-        # NewsAPI returns newest-first; select earliest publishedAt as the root
-        return min(articles, key=lambda a: a.get('publishedAt', ''))
+        return articles[0] if articles else None
     except Exception:
         return None
 
@@ -113,9 +77,6 @@ def run(state: dict) -> dict:
 
     # --- Direct URL input: treat the URL itself as the root story ---
     if _is_url(user_input):
-        if not _is_safe_url(user_input):
-            state['error'] = f'Rejected URL targeting private/internal host: {user_input}'
-            return state
         text = _fetch_text(user_input)
         entities = _extract_entities(text) or [_outlet_from_url(user_input)]
         state['entities'] = entities

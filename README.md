@@ -39,6 +39,12 @@ Open `.env` and set the following:
 ## Backend Setup
 
 ```bash
+# Create venv
+python -m venv venv
+
+# Activate the virtual environment first
+source venv/bin/activate
+
 # Install Python dependencies
 pip install -r requirements.txt
 

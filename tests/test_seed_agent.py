@@ -1,6 +1,6 @@
 from unittest.mock import patch, MagicMock
 import pytest
-from agents.seed_agent import run, query_gdelt, query_newsapi, _outlet_from_url, _is_url, _is_safe_url
+from agents.seed_agent import run, query_gdelt, query_newsapi, _outlet_from_url, _is_url
 
 
 # --- Unit tests for helpers ---
@@ -120,50 +120,3 @@ def test_run_with_url_input():
     assert state['root']['url'] == 'https://reuters.com/world/iran-nuclear-2024'
     assert state['root']['outlet'] == 'Reuters'
     assert 'entities' in state
-
-
-# --- SSRF guard ---
-
-@pytest.mark.parametrize("private_url", [
-    'http://127.0.0.1/admin',
-    'http://localhost/secret',
-    'http://192.168.1.1/router',
-    'http://10.0.0.1/internal',
-    'http://169.254.169.254/latest/meta-data',   # AWS metadata endpoint
-])
-def test_is_safe_url_blocks_private_ips(private_url):
-    assert _is_safe_url(private_url) is False
-
-
-def test_run_rejects_private_url():
-    state = run({'input': 'http://192.168.1.1/admin'})
-    assert 'error' in state
-    assert 'root' not in state
-
-
-def test_fetch_text_skips_private_url():
-    from agents.seed_agent import _fetch_text
-    # Should return '' without making any network call
-    with patch('agents.seed_agent.requests.get') as mock_get:
-        result = _fetch_text('http://10.0.0.1/internal')
-    assert result == ''
-    mock_get.assert_not_called()
-
-
-# --- NewsAPI fallback ordering (picks earliest, not latest) ---
-
-def test_query_newsapi_returns_earliest_article(monkeypatch):
-    monkeypatch.setenv('NEWSAPI_KEY', 'test-key')
-    mock_resp = MagicMock()
-    mock_resp.json.return_value = {
-        'articles': [
-            {'title': 'Latest coverage',  'publishedAt': '2024-03-20T10:00:00Z', 'source': {'name': 'CNN'}},
-            {'title': 'Original report',  'publishedAt': '2024-03-15T08:00:00Z', 'source': {'name': 'Reuters'}},
-            {'title': 'Follow-up piece',  'publishedAt': '2024-03-18T14:00:00Z', 'source': {'name': 'BBC'}},
-        ]
-    }
-    with patch('agents.seed_agent.requests.get', return_value=mock_resp):
-        result = query_newsapi('Iran nuclear')
-    # Must return the article with the earliest publishedAt
-    assert result['title'] == 'Original report'
-    assert result['publishedAt'] == '2024-03-15T08:00:00Z'
