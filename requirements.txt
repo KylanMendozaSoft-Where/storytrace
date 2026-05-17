@@ -1,0 +1,14 @@
+fastapi==0.111.0
+uvicorn==0.29.0
+langgraph==0.1.0
+langchain==0.2.0
+openai==1.30.0
+google-generativeai==0.7.0
+feedparser==6.0.11
+spacy==3.7.4
+langdetect==1.0.9
+psycopg2-binary==2.9.9
+redis==5.0.4
+requests==2.32.0
+python-dotenv==1.0.1
+pydantic==2.7.0
