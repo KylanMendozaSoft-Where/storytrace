@@ -131,7 +131,7 @@ Copy `.env.example` to `.env`. Required keys:
 | `GEMINI_API_KEY` | translator + optional forecast |
 | `WEBHOOK_URL` | alert_agent |
 | `NEXT_PUBLIC_API_URL` | frontend → backend |
-| `NEXT_PUBLIC_SPEECHMATICS_KEY` | VoiceInput component |
+| `SPEECHMATICS_KEY` | server-side only — Next.js API route exchanges it for a short-lived JWT; never `NEXT_PUBLIC_` |
 
 ---
 
@@ -158,3 +158,45 @@ main  ← protected, submission-only
 ```
 
 Commit prefix format: `[D1]`, `[D2]`, `[D3]`, `[D4]` matching which team wrote it.
+
+---
+
+## PR Plan
+
+Full details for every PR are in [plan.md](plan.md). Summary:
+
+| PR | Team | Branch | What | Depends on | Status |
+|----|------|--------|------|------------|--------|
+| **01** | D1 | `PR01-init-structure` | Scaffold — folders, .gitignore, .env.example, requirements.txt | — | ✅ done |
+| **02** | D1 | `feature/database` | DB schema (migrations.sql) + connection.py | PR-01 | — |
+| **03** | D1 | `feature/fastapi-skeleton` | **FastAPI skeleton — H4 API Contract Lock** | PR-02 | — |
+| **04** | D1 | `feature/orchestrator` | LangGraph orchestrator + agent stubs | PR-03 | — |
+| **05** | D1 | `feature/docker` | Docker Compose + Dockerfiles | PR-01 | — |
+| **06** | D2 | `feature/agent-seed` | Agent 1 — Story Seed (GDELT + NewsAPI) | PR-04 | — |
+| **07** | D2 | `feature/agent-crawler` | Agent 2 — Crawler (15 RSS feeds) | PR-06 | — |
+| **08** | D2 | `feature/agent-alert` | Agent 7 — Alert Agent (webhook) | PR-04 | — |
+| **09** | D3 | `feature/agent-dna` | Agent 3 — DNA Extractor (Featherless) | PR-04 | — |
+| **10** | D3 | `feature/agent-translator` | Agent 4 — Translator (Gemini Flash) | PR-04 | — |
+| **11** | D3 | `feature/agent-drift-scorer` | Agent 5 — Drift Scorer (pure Python) | PR-09 | — |
+| **12** | D3 | `feature/agent-geo-builder` | Agent 6 — Geo-Branch Builder | PR-11 | — |
+| **13** | All | `feature/e2e-pipeline` | **E2E integration test — H10 Pipeline Check** | PR-04–12 | — |
+| **14** | D4 | `feature/frontend-setup` | Next.js setup + routing (starts at H0) | PR-01 | — |
+| **15** | D4 | `feature/drift-tree` | DriftTree D3 component (static mock data) | PR-14 | — |
+| **16** | D4 | `feature/diff-panel` | DiffPanel component | PR-15 | — |
+| **17** | D4 | `feature/api-integration` | **API integration — H16 Frontend Lock** | PR-15, PR-03 | — |
+| **18** | D4 | `feature/voice-input` | VoiceInput (Speechmatics WebSocket) | PR-17 | — |
+| **19** | D4 | `feature/ui-polish` | UI polish + mobile responsive | PR-17, PR-18 | — |
+| **20** | D3 | `feature/agent-forecast` | Forecast Agent — Gemini Pro (optional) | PR-13 | — |
+| **21** | D1 | `feature/deployment` | Vultr deployment + Nginx | PR-13 | — |
+| **22** | All | `feature/submission` | README + tag v1.0.0 + submit | All | — |
+
+### Critical gates
+- **H4** — PR-03 merged → API contract locked; D2 and D3 unblock
+- **H10** — PR-13 passes → pipeline end-to-end confirmed
+- **H16** — PR-17 merged → frontend wired to live API
+- **H23** — code freeze, tag `v1.0.0`, submit
+
+### Key implementation notes from plan.md
+- **PR-03**: add `load_dotenv()` at top of `main.py`, CORS middleware for `localhost:3000`, run `run_pipeline` via `loop.run_in_executor` (it's synchronous and blocks the event loop)
+- **PR-12**: geo_builder must write `art['country']` back into each `scored_list` dict before building the tree — otherwise `outlet_versions.country` is always `'Unknown'`
+- **PR-18**: use `SPEECHMATICS_KEY` (no `NEXT_PUBLIC_` prefix); the Next.js API route at `/api/speechmatics-token` exchanges it for a short-lived JWT that the browser receives
